@@ -29,6 +29,7 @@ class PlayerRecord:
     requests: RequestPolicy = RequestPolicy.EVERYONE
     show_presence: bool = True  # friends see when they are online and what they play
     last_seen: datetime | None = None
+    avatar: int = 0  # the profile picture's version (when it was set, ms since the epoch); 0: none
 
 
 class RequestStatus(StrEnum):

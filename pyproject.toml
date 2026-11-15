@@ -1,5 +1,5 @@
 [project]
-name = "balatro-social-service"
+name = "balatro-social"
 version = "0.1.0"
 description = "Friends, chat and shared runs for Balatro in the browser: friend requests and codes, direct and group chats in real time, presence, runs and seeds shared with friends"
 readme = "README.md"

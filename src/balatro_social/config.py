@@ -1,0 +1,47 @@
+"""Settings, from BALATRO_SOCIAL_* environment variables."""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Mapping
+from dataclasses import dataclass
+
+# the database of `make db` (BalatroFrontEnd's docker-compose.yml, service social-db)
+DEFAULT_DATABASE = "postgresql://social:social@127.0.0.1:55436/social"
+
+
+@dataclass(frozen=True)
+class Settings:
+    database: str = DEFAULT_DATABASE  # a PostgreSQL URL, or "memory" (everything is lost when the service stops)
+    api_url: str = "http://127.0.0.1:8000"  # the game API (BalatroWebAPI), without /api/v1: shared runs
+    cors_origins: tuple[str, ...] = ("*",)
+    heartbeat: float = 20  # seconds between the keep-alive comments of an event stream (proxies close idle ones)
+    # sign-in with the identity service: on when the JWKS URL is set; then the issuer is required too
+    auth_jwks_url: str | None = None
+    auth_issuer: str | None = None
+    auth_audience: str = "balatro"
+
+    def __post_init__(self) -> None:
+        if self.database != "memory" and not self.database.startswith(("postgresql://", "postgres://")):
+            raise ValueError("BALATRO_SOCIAL_DATABASE_URL is a postgresql:// URL or 'memory'")
+        if self.auth_jwks_url and not self.auth_issuer:
+            raise ValueError("BALATRO_SOCIAL_AUTH_ISSUER is required with BALATRO_SOCIAL_AUTH_JWKS_URL")
+        if self.heartbeat <= 0:
+            raise ValueError("BALATRO_SOCIAL_HEARTBEAT is more than 0 seconds")
+
+    @classmethod
+    def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
+        d = cls()
+
+        def items(name: str) -> tuple[str, ...]:
+            return tuple(x.strip() for x in env.get(name, "").split(",") if x.strip())
+
+        return cls(
+            database=env.get("BALATRO_SOCIAL_DATABASE_URL") or d.database,
+            api_url=env.get("BALATRO_SOCIAL_API_URL") or d.api_url,
+            cors_origins=items("BALATRO_SOCIAL_CORS_ORIGINS") or d.cors_origins,
+            heartbeat=float(env.get("BALATRO_SOCIAL_HEARTBEAT", d.heartbeat)),
+            auth_jwks_url=env.get("BALATRO_SOCIAL_AUTH_JWKS_URL") or None,
+            auth_issuer=(env.get("BALATRO_SOCIAL_AUTH_ISSUER") or "").rstrip("/") or None,
+            auth_audience=env.get("BALATRO_SOCIAL_AUTH_AUDIENCE") or d.auth_audience,
+        )

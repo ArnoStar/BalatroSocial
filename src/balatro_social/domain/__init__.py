@@ -2,6 +2,7 @@
 
 from .errors import (
     AlreadyFriends,
+    AvatarNotFound,
     CantAdd,
     CantMessage,
     CodeNotFound,
@@ -9,6 +10,7 @@ from .errors import (
     DomainError,
     GroupFull,
     InvalidActivity,
+    InvalidImage,
     InvalidMessage,
     InvalidSeed,
     InvalidTitle,
@@ -25,6 +27,7 @@ from .errors import (
     TooManyGroups,
     TooManyRequests,
 )
+from .images import MAX_AVATAR_BYTES, MAX_AVATAR_SIDE, check_avatar, image_size, image_type
 from .model import (
     ANONYMOUS_PLAYER,
     Activity,
@@ -69,6 +72,7 @@ from .rules import (
 )
 
 __all__ = [
+    "MAX_AVATAR_BYTES", "MAX_AVATAR_SIDE", "AvatarNotFound", "InvalidImage", "check_avatar", "image_size", "image_type",
     "ANONYMOUS_PLAYER", "CODE_ALPHABET", "CODE_LENGTH", "MAX_FRIENDS", "MAX_GROUPS", "MAX_GROUP_MEMBERS",
     "MAX_PENDING_SENT", "MAX_TEXT", "MAX_TITLE", "MESSAGE_BURST", "MESSAGE_WINDOW", "PRESENCE_TTL",
     "REQUESTS_PER_DAY", "Activity", "ActivityKind", "AlreadyFriends", "Block", "CantAdd", "CantMessage",
@@ -76,6 +80,6 @@ __all__ = [
     "Friendship", "GroupFull", "InvalidActivity", "InvalidMessage", "InvalidSeed", "InvalidTitle", "Member",
     "Message", "MessageKind", "MessageNotFound", "NotAGroup", "NotFriends", "NotOwner", "PlayerNotFound",
     "PlayerRecord", "RequestClosed", "RequestNotFound", "RequestPolicy", "RequestStatus", "RunCard", "SeedCard",
-    "SelfAction", "SlowDown", "SystemEvent", "TooManyFriends", "TooManyGroups", "TooManyRequests", "check_activity", "check_seed",
-    "clean_note", "clean_text", "clean_title", "new_code", "pair_key", "parse_code", "show_code",
+    "SelfAction", "SlowDown", "SystemEvent", "TooManyFriends", "TooManyGroups", "TooManyRequests", "check_activity",
+    "check_seed", "clean_note", "clean_text", "clean_title", "new_code", "pair_key", "parse_code", "show_code",
 ]

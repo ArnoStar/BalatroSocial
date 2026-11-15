@@ -35,6 +35,8 @@ class Player:
 class PlayerRef:
     id: str
     name: str | None
+    # their profile picture's version: GET /v1/avatars/{id}?v=<avatar> (None: none, show their initials)
+    avatar: int | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -61,6 +63,7 @@ class PlayerView:
     id: str
     name: str | None
     relation: Relation
+    avatar: int | None = None  # their profile picture's version: GET /v1/avatars/{id}?v=<avatar>
     request: str | None = None  # the friend request waiting between you (incoming or outgoing)
     presence: PresenceView | None = None  # friends'
     since: datetime | None = None  # friends since
@@ -82,6 +85,7 @@ class MeView:
     id: str
     name: str | None
     friend_code: str  # ABCD-2345: others add you with it (an invite link: <site>/friends/add/<code>)
+    avatar: int | None  # your profile picture's version (GET /v1/avatars/{id}?v=<avatar>), None: none
     requests: RequestPolicy  # who may send you a friend request: everyone, or only with your code
     show_presence: bool  # your friends see when you are online and what you play
     friends: int
@@ -146,6 +150,7 @@ class MessageView:
 class MemberView:
     id: str
     name: str | None
+    avatar: int | None
     owner: bool
     last_read: int  # the last message they have read (read receipts)
 
@@ -190,6 +195,13 @@ class Gone:
     """Something the client should drop: a conversation left, a friend removed."""
 
     id: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class AvatarImage:
+    content_type: str
+    data: bytes
+    version: int
 
 
 @dataclass(frozen=True)

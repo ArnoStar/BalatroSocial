@@ -120,3 +120,14 @@ class InvalidSeed(DomainError):
 
 class InvalidActivity(DomainError):
     code = "invalid_activity"
+
+
+class InvalidImage(DomainError):
+    code = "invalid_image"
+
+
+class AvatarNotFound(DomainError):
+    code = "avatar_not_found"
+
+    def __init__(self, player_id: str) -> None:
+        super().__init__(f"{player_id!r} has no profile picture")

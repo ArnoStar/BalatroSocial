@@ -47,6 +47,14 @@ class Unit(Protocol):
         """Players whose name starts with ``query`` (case ignored), by name."""
         ...
 
+    def avatar(self, player: str) -> tuple[str, bytes] | None:
+        """The player's profile picture: its content type and bytes."""
+        ...
+
+    def save_avatar(self, player: str, content_type: str, data: bytes) -> None: ...
+
+    def remove_avatar(self, player: str) -> None: ...
+
     # friends
     def friendship(self, player: str, friend: str) -> Friendship | None: ...
 
@@ -95,7 +103,9 @@ class Unit(Protocol):
 
     def conversations(self, ids: Iterable[str]) -> dict[str, Conversation]: ...
 
-    def direct_between(self, a: str, b: str) -> Conversation | None: ...
+    def direct_between(self, a: str, b: str, lock: bool = False) -> Conversation | None:
+        """``lock``: until this unit ends, nobody else makes or reads (with lock) the pair's conversation."""
+        ...
 
     def directs_of(self, player: str) -> dict[str, str]:
         """The player's direct conversations: the other player's id -> the conversation's id."""
@@ -200,8 +210,8 @@ class Presence(Protocol):
     def state(self, player: str, now: datetime) -> PresenceState: ...
 
     def settle(self, now: datetime) -> list[str]:
-        """The players who have gone offline since they were last seen online (their last stream closed a few
-        seconds ago, and the game's heartbeat stopped): once each."""
+        """The players whose presence changed by itself since it was last told: gone offline (their last stream
+        closed a few seconds ago, and the game's heartbeat stopped), or out of the game but still on the site."""
         ...
 
 
