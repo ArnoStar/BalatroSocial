@@ -1,5 +1,6 @@
-"""The game API (BalatroWebAPI): a run the player shares, read with their own
-access token (so it can only be one of theirs: the API says 404 otherwise)."""
+"""The game API (BalatroWebAPI): a run the player shares, and the match they
+invite friends to, read with their own access token (so it can only be one of
+theirs: the API says 404 otherwise)."""
 
 from __future__ import annotations
 
@@ -12,8 +13,8 @@ from datetime import datetime
 from typing import Any
 
 from balatro_social.application.dto import Player
-from balatro_social.application.errors import GameApiUnavailable, RunNotFound
-from balatro_social.domain import RunCard
+from balatro_social.application.errors import GameApiUnavailable, NoOpenMatch, RunNotFound
+from balatro_social.domain import MatchCard, RunCard
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +31,22 @@ class GameApi:
         if token:
             req.add_header("Authorization", f"Bearer {token}")
         with urllib.request.urlopen(req, timeout=self.timeout) as r:
-            return json.loads(r.read())
+            body = r.read()
+            return json.loads(body) if body else None
+
+    def open_match(self, player: Player) -> MatchCard:
+        path = "/matches/current"
+        try:
+            m = self._get(path, player.token)
+        except urllib.error.HTTPError as exc:
+            log.warning("the game API answered %s to %s", exc.code, path)
+            raise GameApiUnavailable("the game's server can't tell about your match now, try again") from exc
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+            log.warning("the game API didn't answer %s: %s", path, exc)
+            raise GameApiUnavailable("the game's server can't be reached, try again") from exc
+        if not m or m.get("status") != "lobby":
+            raise NoOpenMatch()
+        return MatchCard(id=str(m["id"]), code=str(m["code"]), mode=str(m.get("mode") or "pvp"))
 
     def run(self, player: Player, run_id: str) -> RunCard:
         path = f"/games/{urllib.parse.quote(run_id, safe='')}/summary"

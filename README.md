@@ -58,6 +58,10 @@ needs an access token from the identity service.
 | `DELETE /v1/conversations/{id}/messages/{message}` | delete one of yours |
 | `POST /v1/conversations/{id}/read` | `{seq}`: read up to there |
 | `POST /v1/conversations/{id}/typing` | you are writing (every 3 seconds while you are) |
+| `POST /v1/invites` | `{to}`: invite a friend to your match waiting for players (the game API's, read with your token: `409 no_open_match` without one); they join it with the invite's `code` |
+| `GET /v1/invites` | your open invites (10 minutes, until answered) |
+| `POST /v1/invites/{id}/accept\|decline` | answer one (then join the match in the game: `/play/?match=<code>`) |
+| `GET /v1/inbox` | what waits for you, for a notification bell: friend requests to answer, conversations with unread messages (not muted), open invites, and their `count` |
 | `GET /v1/events` | your live events (server-sent events): [docs/events.md](docs/events.md) |
 
 Errors are problem details with a stable `code`: `unauthenticated`,
@@ -68,7 +72,8 @@ Errors are problem details with a stable `code`: `unauthenticated`,
 `invalid_image`, `avatar_not_found`,
 `too_many_groups`, `too_many_requests`, `slow_down`, `invalid_message`,
 `invalid_title`, `invalid_seed`, `invalid_activity`, `invalid_request`,
-`game_api_unavailable`. Interactive docs at `/docs`.
+`game_api_unavailable`, `invite_not_found`, `invite_closed`, `no_open_match`. Interactive docs at
+`/docs`.
 
 ## Limits
 
@@ -80,13 +85,14 @@ Errors are problem details with a stable `code`: `unauthenticated`,
 | a message | 2000 characters; 20 messages in 30 seconds |
 | presence | the game's heartbeat counts for 90 seconds; a closed stream for 10 |
 | a profile picture | 256 KB, 1024 x 1024 pixels; PNG, JPEG or WebP; 100 players in one look-up |
+| an invite to a match | to friends; open 10 minutes; 60 an hour |
 
 ## Settings
 
 | Variable | Default | |
 |---|---|---|
 | `BALATRO_SOCIAL_DATABASE_URL` | `postgresql://social:social@127.0.0.1:55436/social` (`make db`) | PostgreSQL, or `memory` |
-| `BALATRO_SOCIAL_API_URL` | `http://127.0.0.1:8000` | the game API (shared runs) |
+| `BALATRO_SOCIAL_API_URL` | `http://127.0.0.1:8000` | the game API (shared runs, the match an invite is for) |
 | `BALATRO_SOCIAL_AUTH_JWKS_URL` | unset (sign-in off) | the identity service's `/.well-known/jwks.json` |
 | `BALATRO_SOCIAL_AUTH_ISSUER` | | required with the JWKS URL: the identity service's `PUBLIC_URL` |
 | `BALATRO_SOCIAL_AUTH_AUDIENCE` | `balatro` | |

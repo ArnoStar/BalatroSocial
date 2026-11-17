@@ -4,7 +4,17 @@ from __future__ import annotations
 
 import logging
 
-from .application.ports import Authenticator, Clock, CodeSource, EventHub, IdGenerator, Presence, RunSource, Store
+from .application.ports import (
+    Authenticator,
+    Clock,
+    CodeSource,
+    EventHub,
+    IdGenerator,
+    MatchSource,
+    Presence,
+    RunSource,
+    Store,
+)
 from .application.use_cases import Deps, UseCases, build
 from .config import Settings
 from .infrastructure.auth import AnonymousAuthenticator, JwtAuthenticator
@@ -33,8 +43,9 @@ def build_store(settings: Settings) -> Store:
 def build_use_cases(settings: Settings, *, store: Store | None = None, runs: RunSource | None = None,
                     hub: EventHub | None = None, presence: Presence | None = None, clock: Clock | None = None,
                     ids: IdGenerator | None = None, codes: CodeSource | None = None,
-                    authenticator: Authenticator | None = None) -> UseCases:
-    deps = Deps(store=store if store is not None else build_store(settings), runs=runs or GameApi(settings.api_url),
+                    authenticator: Authenticator | None = None, matches: MatchSource | None = None) -> UseCases:
+    game_api = GameApi(settings.api_url)
+    deps = Deps(store=store if store is not None else build_store(settings), runs=runs or game_api,
                 hub=hub or LocalHub(), presence=presence or PresenceBoard(), clock=clock or SystemClock(),
-                ids=ids or UuidGenerator(), codes=codes or SecretCodes())
+                ids=ids or UuidGenerator(), codes=codes or SecretCodes(), matches=matches or game_api)
     return build(deps, authenticator or build_authenticator(settings))

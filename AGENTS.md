@@ -15,9 +15,10 @@ sends its presence.
 
 1. **Both players want a friendship.** It starts only when a request is
    accepted, or two requests cross. Never make one any other way.
-2. **Players reach those who want them.** Direct messages go between friends
-   only; a group's new members are friends of whoever adds them. A block ends
-   the friendship and any request between the two, and the blocked player
+2. **Players reach those who want them.** Direct messages and invites to a
+   match go between friends only; a group's new members are friends of
+   whoever adds them. A block ends the friendship and any request between
+   the two, and the blocked player
    can't ask again, write, or find the blocker by name. A player who takes
    requests only with their code isn't listed by name. Don't add a way around
    these.
@@ -33,8 +34,9 @@ sends its presence.
    differ).
 6. **The game API decides what a run is.** A shared run is read from the game
    API with the sharer's own token (`GET /api/v1/games/{id}/summary`): it can
-   only be one of theirs. The service never writes to the game API and never
-   trusts a run a client describes.
+   only be one of theirs; so is the match an invite is for
+   (`GET /api/v1/matches/current`). The service never writes to the game API
+   and never trusts a run or a match a client describes.
 7. **A picture is an image, checked from its bytes.** PNG, JPEG or WebP
    only (never SVG), small (`domain/images.py`), served with `nosniff` and a
    sandboxing CSP: it is public (an `<img>` sends no token) and on the site's

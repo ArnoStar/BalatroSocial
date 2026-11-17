@@ -2,7 +2,8 @@
 
 A friendship starts only when both players want it (a request accepted, or two
 requests crossing). Direct messages go between friends; a group's members are
-friends of whoever added them. Presence is for friends only. Every change
+friends of whoever added them; invites to a match go to friends. Presence is
+for friends only. Every change
 happens in one store transaction (``Unit``), and its events go out once the
 transaction is done (``Outbox``)."""
 
@@ -15,6 +16,8 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from balatro_social.domain import (
+    INVITE_TTL,
+    INVITES_PER_HOUR,
     MAX_AVATAR_LOOKUP,
     MAX_FRIENDS,
     MAX_GROUP_MEMBERS,
@@ -36,6 +39,10 @@ from balatro_social.domain import (
     FriendRequest,
     GroupFull,
     InvalidMessage,
+    Invite,
+    InviteClosed,
+    InviteNotFound,
+    InviteStatus,
     Member,
     Message,
     MessageKind,
@@ -76,11 +83,14 @@ from .dto import (
     ConversationView,
     Event,
     Gone,
+    InboxView,
+    InviteView,
     MeChanges,
     MemberView,
     MessageView,
     MeView,
     NewGroup,
+    NewInvite,
     NewMessage,
     NewRequest,
     Player,
@@ -96,6 +106,7 @@ from .dto import (
     SystemView,
     TypingView,
 )
+from .errors import GameApiUnavailable
 from .ports import (
     Authenticator,
     Box,
@@ -103,6 +114,7 @@ from .ports import (
     CodeSource,
     EventHub,
     IdGenerator,
+    MatchSource,
     Presence,
     RunSource,
     Store,
@@ -126,6 +138,7 @@ class Deps:
     clock: Clock
     ids: IdGenerator
     codes: CodeSource
+    matches: MatchSource | None = None  # (None: invites can't be sent)
 
 
 class Outbox:
@@ -1053,6 +1066,96 @@ class SettlePresence(_UseCase):
         out.send(self.deps.hub)
 
 
+# ------------------------------------------------------------------ invites to a match
+
+
+def invite_view(u: Unit, i: Invite) -> InviteView:
+    names = u.players([i.sender, i.recipient])
+    return InviteView(id=i.id, sender=ref(names, i.sender), recipient=ref(names, i.recipient), mode=i.mode,
+                      code=i.code, status=i.status, created_at=i.created_at, expires_at=i.expires_at)
+
+
+class SendInvite(_UseCase):
+    """Invite a friend to the caller's match waiting for players (read from the game API with their token: the
+    code is the API's, never the client's). Again to the same friend and match: the same invite, open longer."""
+
+    def __call__(self, player: Player, invite: NewInvite) -> InviteView:
+        if self.deps.matches is None:
+            raise GameApiUnavailable("invites are off on this server")
+        with self.deps.store.unit() as u:  # (a quick check before reading the game API)
+            if invite.to == player.id:
+                raise SelfAction("you are in your match already")
+            if u.friendship(player.id, invite.to) is None:
+                raise NotFriends("you can only invite your friends")
+        match = self.deps.matches.open_match(player)
+        now, out = self.deps.clock.now(), Outbox()
+        with self.deps.store.unit() as u:
+            me = ensure_player(self.deps, u, player, now)
+            if u.friendship(me.id, invite.to) is None:
+                raise NotFriends("you can only invite your friends")
+            i = u.open_invite(me.id, invite.to, match.code, now, lock=True)
+            if i is not None:
+                i.expires_at, i.updated_at = now + INVITE_TTL, now
+                u.save_invite(i)
+            else:
+                if u.count_invites_since(me.id, now - timedelta(hours=1)) >= INVITES_PER_HOUR:
+                    raise SlowDown("that's a lot of invites: wait a little")
+                i = Invite(id=self.deps.ids.new_id(), sender=me.id, recipient=invite.to, mode=match.mode,
+                           code=match.code, match=match.id, status=InviteStatus.PENDING, created_at=now,
+                           expires_at=now + INVITE_TTL, updated_at=now)
+                u.add_invite(i)
+            view = invite_view(u, i)
+            out.add([me.id, invite.to], "invite", view)
+        out.send(self.deps.hub)
+        return view
+
+
+class ListInvites(_UseCase):
+    """The caller's open invites, newest first."""
+
+    def __call__(self, player: Player) -> list[InviteView]:
+        now = self.deps.clock.now()
+        with self.deps.store.unit() as u:
+            me = ensure_player(self.deps, u, player, now)
+            return [invite_view(u, i) for i in u.invites_to(me.id, now)]
+
+
+class AnswerInvite(_UseCase):
+    """The recipient takes the invite (then joins the match with its code) or declines it."""
+
+    def __call__(self, player: Player, invite_id: str, accept: bool) -> InviteView:
+        now, out = self.deps.clock.now(), Outbox()
+        with self.deps.store.unit() as u:
+            ensure_player(self.deps, u, player, now)
+            i = u.invite(invite_id, lock=True)
+            if i is None or player.id not in (i.sender, i.recipient):
+                raise InviteNotFound(invite_id)
+            if i.recipient != player.id:
+                raise SelfAction("this invite is for your friend to answer")
+            if not i.open(now):
+                raise InviteClosed("the invite is over: it was answered, or it expired")
+            i.status, i.updated_at = (InviteStatus.ACCEPTED if accept else InviteStatus.DECLINED), now
+            u.save_invite(i)
+            view = invite_view(u, i)
+            out.add([i.sender, i.recipient], "invite", view)
+        out.send(self.deps.hub)
+        return view
+
+
+class GetInbox(_UseCase):
+    """What waits for the player (a notification bell): friend requests to answer, unread conversations, invites."""
+
+    def __call__(self, player: Player) -> InboxView:
+        now = self.deps.clock.now()
+        with self.deps.store.unit() as u:
+            me = ensure_player(self.deps, u, player, now)
+            requests = [request_view(u, r) for r in u.requests_of(me.id, "incoming")]
+            invites = [invite_view(u, i) for i in u.invites_to(me.id, now)]
+        conversations = [c for c in ListConversations(self.deps)(player) if c.unread > 0 and not c.muted]
+        return InboxView(requests=requests, conversations=conversations, invites=invites,
+                         count=len(requests) + len(conversations) + len(invites))
+
+
 @dataclass(frozen=True)
 class UseCases:
     authenticate: Authenticate
@@ -1093,6 +1196,10 @@ class UseCases:
     stream_opened: StreamOpened
     stream_closed: StreamClosed
     settle_presence: SettlePresence
+    send_invite: SendInvite
+    invites: ListInvites
+    answer_invite: AnswerInvite
+    inbox: GetInbox
 
 
 def build(deps: Deps, authenticator: Authenticator) -> UseCases:
@@ -1109,4 +1216,5 @@ def build(deps: Deps, authenticator: Authenticator) -> UseCases:
         update_conversation=UpdateConversation(deps), add_members=AddMembers(deps), remove_member=RemoveMember(deps),
         messages=ListMessages(deps), send=SendMessage(deps), delete_message=DeleteMessage(deps),
         mark_read=MarkRead(deps), typing=Typing(deps), subscribe=Subscribe(deps), stream_opened=StreamOpened(deps),
-        stream_closed=StreamClosed(deps), settle_presence=SettlePresence(deps))
+        stream_closed=StreamClosed(deps), settle_presence=SettlePresence(deps), send_invite=SendInvite(deps),
+        invites=ListInvites(deps), answer_invite=AnswerInvite(deps), inbox=GetInbox(deps))

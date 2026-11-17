@@ -21,6 +21,7 @@ from balatro_social.domain import (
     ConversationKind,
     FriendRequest,
     Friendship,
+    Invite,
     Member,
     Message,
     PlayerRecord,
@@ -40,11 +41,12 @@ class _State:
     messages: dict[str, Message] = field(default_factory=dict)
     by_conversation: dict[str, list[str]] = field(default_factory=dict)  # message ids, in order
     avatars: dict[str, tuple[str, bytes]] = field(default_factory=dict)
+    invites: dict[str, Invite] = field(default_factory=dict)
 
     def copy(self) -> _State:
         return _State(dict(self.players), dict(self.friendships), dict(self.requests), dict(self.blocks),
                       dict(self.conversations), dict(self.members), dict(self.messages),
-                      {k: list(v) for k, v in self.by_conversation.items()}, dict(self.avatars))
+                      {k: list(v) for k, v in self.by_conversation.items()}, dict(self.avatars), dict(self.invites))
 
 
 def _c[T](x: T) -> T:
@@ -244,6 +246,30 @@ class MemoryUnit:
 
     def count_messages_since(self, sender: str, since: datetime) -> int:
         return sum(1 for m in self.s.messages.values() if m.sender == sender and m.created_at > since)
+
+
+    # invites
+    def invite(self, invite_id: str, lock: bool = False) -> Invite | None:
+        i = self.s.invites.get(invite_id)
+        return _c(i) if i else None
+
+    def open_invite(self, sender: str, recipient: str, code: str, now: datetime, lock: bool = False) -> Invite | None:
+        found = [i for i in self.s.invites.values()
+                 if i.sender == sender and i.recipient == recipient and i.code == code and i.open(now)]
+        return _c(found[0]) if found else None
+
+    def invites_to(self, player: str, now: datetime) -> builtins.list[Invite]:
+        mine = [i for i in self.s.invites.values() if i.recipient == player and i.open(now)]
+        return [_c(i) for i in sorted(mine, key=lambda i: (i.updated_at, i.id), reverse=True)]
+
+    def count_invites_since(self, sender: str, since: datetime) -> int:
+        return sum(1 for i in self.s.invites.values() if i.sender == sender and i.created_at > since)
+
+    def add_invite(self, i: Invite) -> None:
+        self.s.invites[i.id] = _c(i)
+
+    def save_invite(self, i: Invite) -> None:
+        self.s.invites[i.id] = _c(i)
 
 
 class MemoryStore:
