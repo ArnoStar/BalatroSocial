@@ -50,6 +50,7 @@ from .model import (
 from .rules import (
     CODE_ALPHABET,
     CODE_LENGTH,
+    MAX_AVATAR_LOOKUP,
     MAX_FRIENDS,
     MAX_GROUP_MEMBERS,
     MAX_GROUPS,
@@ -73,8 +74,8 @@ from .rules import (
 
 __all__ = [
     "MAX_AVATAR_BYTES", "MAX_AVATAR_SIDE", "AvatarNotFound", "InvalidImage", "check_avatar", "image_size", "image_type",
-    "ANONYMOUS_PLAYER", "CODE_ALPHABET", "CODE_LENGTH", "MAX_FRIENDS", "MAX_GROUPS", "MAX_GROUP_MEMBERS",
-    "MAX_PENDING_SENT", "MAX_TEXT", "MAX_TITLE", "MESSAGE_BURST", "MESSAGE_WINDOW", "PRESENCE_TTL",
+    "ANONYMOUS_PLAYER", "CODE_ALPHABET", "CODE_LENGTH", "MAX_AVATAR_LOOKUP", "MAX_FRIENDS", "MAX_GROUPS",
+    "MAX_GROUP_MEMBERS", "MAX_PENDING_SENT", "MAX_TEXT", "MAX_TITLE", "MESSAGE_BURST", "MESSAGE_WINDOW", "PRESENCE_TTL",
     "REQUESTS_PER_DAY", "Activity", "ActivityKind", "AlreadyFriends", "Block", "CantAdd", "CantMessage",
     "CodeNotFound", "Conversation", "ConversationKind", "ConversationNotFound", "DomainError", "FriendRequest",
     "Friendship", "GroupFull", "InvalidActivity", "InvalidMessage", "InvalidSeed", "InvalidTitle", "Member",

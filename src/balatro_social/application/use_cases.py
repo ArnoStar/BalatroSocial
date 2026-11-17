@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from balatro_social.domain import (
+    MAX_AVATAR_LOOKUP,
     MAX_FRIENDS,
     MAX_GROUP_MEMBERS,
     MAX_GROUPS,
@@ -674,6 +675,18 @@ class GetAvatar(_UseCase):
             return AvatarImage(content_type=image[0], data=image[1], version=rec.avatar)
 
 
+class AvatarVersions(_UseCase):
+    """Which of these players have a profile picture, and its version (public, as the pictures are): any page
+    that names players shows theirs with one look-up. Unknown players have none; the first ``MAX_AVATAR_LOOKUP``
+    ids are looked up."""
+
+    def __call__(self, ids: Iterable[str]) -> dict[str, int | None]:
+        wanted = list(dict.fromkeys(i for i in ids if i))[:MAX_AVATAR_LOOKUP]
+        with self.deps.store.unit() as u:
+            recs = u.players(wanted)
+        return {i: (recs[i].avatar or None) if i in recs else None for i in wanted}
+
+
 class BlockPlayer(_UseCase):
     """No friendship, no request, no direct message between the two any more (their old messages stay)."""
 
@@ -1061,6 +1074,7 @@ class UseCases:
     set_avatar: SetAvatar
     remove_avatar: RemoveAvatar
     avatar: GetAvatar
+    avatar_versions: AvatarVersions
     block: BlockPlayer
     unblock: UnblockPlayer
     conversations: ListConversations
@@ -1089,7 +1103,8 @@ def build(deps: Deps, authenticator: Authenticator) -> UseCases:
         remove_friend=RemoveFriend(deps), requests=ListRequests(deps), send_request=SendRequest(deps),
         accept=AcceptRequest(deps), decline=DeclineRequest(deps), cancel=CancelRequest(deps), blocks=ListBlocks(deps),
         set_avatar=SetAvatar(deps), remove_avatar=RemoveAvatar(deps), avatar=GetAvatar(deps),
-        block=BlockPlayer(deps), unblock=UnblockPlayer(deps), conversations=ListConversations(deps),
+        avatar_versions=AvatarVersions(deps), block=BlockPlayer(deps), unblock=UnblockPlayer(deps),
+        conversations=ListConversations(deps),
         conversation=GetConversation(deps), open_direct=OpenDirect(deps), create_group=CreateGroup(deps),
         update_conversation=UpdateConversation(deps), add_members=AddMembers(deps), remove_member=RemoveMember(deps),
         messages=ListMessages(deps), send=SendMessage(deps), delete_message=DeleteMessage(deps),

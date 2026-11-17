@@ -25,6 +25,17 @@ def get_player(player_id: str, player: CurrentPlayer, uses: Uses) -> PlayerView:
     return uses.player(player, player_id)
 
 
+@router.get("/avatars", summary="Which players have a profile picture")
+def avatar_versions(uses: Uses,
+                    ids: Annotated[str, Query(max_length=4000, description="account ids, separated by commas "
+                                                                             "(the first 100 are looked up)")],
+                    ) -> dict[str, int | None]:
+    """Public, as the pictures are. Each id with its picture's version (``GET /v1/avatars/{id}?v=<version>``),
+    or null: no picture (show their initials). Pages that name players (leaderboards, trades, the casino) show
+    everyone's picture with one look-up."""
+    return uses.avatar_versions(i.strip() for i in ids.split(","))
+
+
 @router.get("/avatars/{player_id}", summary="A player's profile picture", response_class=Response,
             responses={200: {"content": {"image/webp": {}, "image/png": {}, "image/jpeg": {}}},
                        404: {"description": "no picture: show their initials"}})

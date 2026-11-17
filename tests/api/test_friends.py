@@ -199,3 +199,16 @@ def test_profile_pictures(world: World) -> None:
     assert second.json()["avatar"] > version  # (a new version: no cache keeps the old one)
     assert world.call("DELETE", "/v1/me/avatar", "Ann")["avatar"] is None
     assert world.client.get("/v1/avatars/ann").status_code == 404
+
+
+def test_avatar_versions(world: World) -> None:
+    from tests.unit.test_images import png
+    world.call("GET", "/v1/me", "Bob")
+    r = world.client.put("/v1/me/avatar", content=png(16, 16), headers={**world.h("Ann"), "Content-Type": "image/png"})
+    version = r.json()["avatar"]
+    # public (no token), in the order asked, each id once; unknown players have none
+    got = world.client.get("/v1/avatars", params={"ids": "ann,bob,nobody,ann, "})
+    assert got.status_code == 200, got.text
+    assert got.json() == {"ann": version, "bob": None, "nobody": None}
+    many = ",".join(f"p{i}" for i in range(150))
+    assert len(world.client.get("/v1/avatars", params={"ids": many}).json()) == 100

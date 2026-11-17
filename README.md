@@ -36,6 +36,7 @@ needs an access token from the identity service.
 | `POST /v1/me/code` | a new friend code (the old one and its links stop working) |
 | `PUT /v1/me/avatar` | your profile picture: the image itself as the body (PNG, JPEG or WebP, checked from its bytes; 256 KB and 1024 x 1024 at most) |
 | `DELETE /v1/me/avatar` | no picture (your initials) |
+| `GET /v1/avatars?ids=a,b,c` | which players have a picture: `{id: version or null}` (public; 100 ids at most), so that a page naming many players shows theirs with one look-up |
 | `GET /v1/avatars/{id}?v=` | a player's picture, public (an `<img>` sends no token); `v`, the views' `avatar` version, makes it cacheable for good |
 | `PUT /v1/me/presence` | the game's heartbeat: `{activity: {kind: menu\|run\|watching, deck, stake, ante, seeded, challenge}}`, every minute and on each change |
 | `GET /v1/players?q=` | players by the start of their name (2 characters at least), with their `relation` to you |
@@ -78,7 +79,7 @@ Errors are problem details with a stable `code`: `unauthenticated`,
 | a group | 20 players; a player is in 30 groups at most |
 | a message | 2000 characters; 20 messages in 30 seconds |
 | presence | the game's heartbeat counts for 90 seconds; a closed stream for 10 |
-| a profile picture | 256 KB, 1024 x 1024 pixels; PNG, JPEG or WebP |
+| a profile picture | 256 KB, 1024 x 1024 pixels; PNG, JPEG or WebP; 100 players in one look-up |
 
 ## Settings
 
