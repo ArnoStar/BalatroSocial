@@ -30,7 +30,7 @@ blank line. A line starting with `:` is a comment, sent every 20 seconds
   not read): open a new one.
 - Events aren't kept: after a reconnection, reload what is shown
   (`/v1/friends`, `/v1/conversations`, the open conversation's messages after
-  the last `seq` the client has).
+  the last `seq` the client has, `/v1/inbox` for a notification bell).
 
 The site's nginx passes it on unbuffered (`X-Accel-Buffering: no`, which the
 portal's nginx passes to a proxy in front of it).
@@ -51,5 +51,6 @@ portal's nginx passes to a proxy in front of it).
 | `friend` | `PlayerView` (the friend, with presence) | each of the two; the player's friends | a friendship started; a friend's profile picture changed (replace the friend) |
 | `friend_removed` | `{id}` (the other player) | each of the two | a friendship ended (removed, or blocked) |
 | `presence` | `{player, presence: PresenceView}` | the player's friends | they came online, went offline, or do something else in the game |
+| `invite` | `InviteView` | its two players | a friend invites you to their match (or again: open longer), or the invite was answered |
 
 The views are the same as the HTTP API's (`/docs` has their schemas).

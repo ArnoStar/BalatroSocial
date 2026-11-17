@@ -9,6 +9,7 @@ from balatro_social.application.dto import (
     ConversationChanges,
     MeChanges,
     NewGroup,
+    NewInvite,
     NewMessage,
     NewRequest,
     SeedInput,
@@ -60,6 +61,13 @@ class RequestBody(Body):
 
     def to_dto(self) -> NewRequest:
         return NewRequest(to=self.to, code=self.code)
+
+
+class InviteBody(Body):
+    to: str = Field(..., min_length=1, max_length=100, description="the friend's id")
+
+    def to_dto(self) -> NewInvite:
+        return NewInvite(to=self.to)
 
 
 class DirectBody(Body):

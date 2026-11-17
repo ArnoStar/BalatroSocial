@@ -70,7 +70,8 @@ def make_world(store: object | None = None, signed_in: bool = True) -> World:
     auth = JwtAuthenticator(FixedKeys(), ISSUER, AUDIENCE) if signed_in else None
     uses = build_use_cases(Settings(database="memory", heartbeat=HEARTBEAT),
                            store=store or MemoryStore(), runs=runs, hub=hub,  # type: ignore[arg-type]
-                           presence=presence, clock=clock, ids=Ids(), codes=Codes(), authenticator=auth)
+                           presence=presence, clock=clock, ids=Ids(), codes=Codes(), authenticator=auth,
+                           matches=runs)
     return World(uses=uses, runs=runs, clock=clock, hub=hub, presence=presence,
                  client=TestClient(create_app(uses, heartbeat=HEARTBEAT)))
 

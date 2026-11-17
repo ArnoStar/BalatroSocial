@@ -32,6 +32,19 @@ class RequestNotFound(DomainError):
         super().__init__(f"no friend request {request_id!r}")
 
 
+class InviteNotFound(DomainError):
+    """Also for another player's invite."""
+
+    code = "invite_not_found"
+
+    def __init__(self, invite_id: str) -> None:
+        super().__init__(f"no invite {invite_id!r}")
+
+
+class InviteClosed(DomainError):
+    code = "invite_closed"
+
+
 class ConversationNotFound(DomainError):
     """Also for a conversation the caller isn't in: others' conversations don't exist for them."""
 

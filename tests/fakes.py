@@ -6,8 +6,8 @@ from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 
 from balatro_social.application.dto import Event, Player
-from balatro_social.application.errors import GameApiUnavailable, RunNotFound
-from balatro_social.domain import RunCard
+from balatro_social.application.errors import GameApiUnavailable, NoOpenMatch, RunNotFound
+from balatro_social.domain import MatchCard, RunCard
 from balatro_social.infrastructure.hub import LocalHub
 
 T0 = datetime(2026, 11, 15, 12, 0, tzinfo=UTC)
@@ -47,10 +47,21 @@ class Codes:
 
 
 class FakeRuns:
+    """The game API: runs to share, and the players' matches waiting for players."""
+
     def __init__(self) -> None:
         self.cards: dict[tuple[str, str], RunCard] = {}
+        self.matches: dict[str, MatchCard] = {}
         self.down = False
         self.calls = 0
+
+    def open_match(self, player: Player) -> MatchCard:
+        if self.down:
+            raise GameApiUnavailable("down")
+        m = self.matches.get(player.id)
+        if m is None:
+            raise NoOpenMatch()
+        return m
 
     def add(self, player: str, run_id: str, **kw: object) -> RunCard:
         values: dict[str, object] = {"deck": "b_red", "stake": 1, "seed": "ABCD1234", "seeded": False,

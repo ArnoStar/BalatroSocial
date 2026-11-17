@@ -9,6 +9,7 @@ from typing import Any, Literal
 from balatro_social.domain import (
     ActivityKind,
     ConversationKind,
+    InviteStatus,
     MessageKind,
     RequestPolicy,
     RequestStatus,
@@ -204,6 +205,32 @@ class AvatarImage:
     version: int
 
 
+@dataclass(frozen=True, kw_only=True)
+class InviteView:
+    """An invite to play a match together: the recipient joins it in the game with ``code``
+    (<site>/play/?match=<code>)."""
+
+    id: str
+    sender: PlayerRef
+    recipient: PlayerRef
+    mode: str  # the match's mode: "pvp", "coop"
+    code: str  # the match's invite code
+    status: InviteStatus
+    created_at: datetime
+    expires_at: datetime  # open until then (or until answered)
+
+
+@dataclass(frozen=True, kw_only=True)
+class InboxView:
+    """What waits for the player, for a notification bell: friend requests to answer, conversations with unread
+    messages (not muted), open invites. ``count`` adds them up (requests, unread conversations, invites)."""
+
+    requests: list[RequestView]
+    conversations: list[ConversationView]
+    invites: list[InviteView]
+    count: int
+
+
 @dataclass(frozen=True)
 class Event:
     """A change a player's clients should know about at once (docs/events.md): ``data`` is a view."""
@@ -265,3 +292,8 @@ class ActivityInput:
     ante: int | None = None
     seeded: bool = False
     challenge: str | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class NewInvite:
+    to: str  # the friend's id

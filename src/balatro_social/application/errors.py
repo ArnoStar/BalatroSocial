@@ -26,3 +26,12 @@ class RunNotFound(DomainError):
 
     def __init__(self, run_id: str) -> None:
         super().__init__(f"no run {run_id!r} of yours")
+
+
+class NoOpenMatch(DomainError):
+    """The inviting player has no match waiting for players (the game API says so)."""
+
+    code = "no_open_match"
+
+    def __init__(self) -> None:
+        super().__init__("make a match in the game first: friends are invited to its lobby")

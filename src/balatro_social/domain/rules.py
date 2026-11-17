@@ -21,6 +21,8 @@ MESSAGE_BURST = 20  # messages one player may send ...
 MESSAGE_WINDOW = timedelta(seconds=30)  # ... in this long
 PRESENCE_TTL = timedelta(seconds=90)  # a game's heartbeat keeps its player online this long
 MAX_AVATAR_LOOKUP = 100  # players in one look-up of profile pictures (GET /v1/avatars?ids=)
+INVITE_TTL = timedelta(minutes=10)  # an invite to a match is open this long
+INVITES_PER_HOUR = 60  # invites one player may send in an hour
 
 # friend codes: no 0/O, 1/I/L, so that a code read aloud or copied by hand works
 CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"

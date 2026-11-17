@@ -28,6 +28,8 @@ from balatro_social.domain import (
     ConversationKind,
     FriendRequest,
     Friendship,
+    Invite,
+    InviteStatus,
     Member,
     Message,
     MessageKind,
@@ -118,6 +120,23 @@ MIGRATIONS: tuple[str, ...] = (
         data BYTEA NOT NULL
     );
     """,
+    # 3: invites to play a match together
+    """
+    CREATE TABLE invites (
+        id TEXT PRIMARY KEY,
+        sender TEXT NOT NULL REFERENCES players (id),
+        recipient TEXT NOT NULL REFERENCES players (id),
+        mode TEXT NOT NULL,
+        code TEXT NOT NULL,
+        match TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX invites_recipient ON invites (recipient, expires_at) WHERE status = 'pending';
+    CREATE INDEX invites_sender ON invites (sender, created_at DESC);
+    """,
 )
 
 
@@ -143,6 +162,12 @@ def _player(r: DictRow) -> PlayerRecord:
 def _request(r: DictRow) -> FriendRequest:
     return FriendRequest(id=r["id"], sender=r["sender"], recipient=r["recipient"], status=RequestStatus(r["status"]),
                          created_at=r["created_at"], updated_at=r["updated_at"])
+
+
+def _invite(r: DictRow) -> Invite:
+    return Invite(id=r["id"], sender=r["sender"], recipient=r["recipient"], mode=r["mode"], code=r["code"],
+                  match=r["match"], status=InviteStatus(r["status"]), created_at=r["created_at"],
+                  expires_at=r["expires_at"], updated_at=r["updated_at"])
 
 
 def _conversation(r: DictRow) -> Conversation:
@@ -417,6 +442,40 @@ class PostgresUnit:
         row = self.c.execute("SELECT count(*) AS n FROM messages WHERE sender = %s AND created_at > %s",
                              (sender, since)).fetchone()
         return int(row["n"]) if row else 0
+
+    # invites
+    def invite(self, invite_id: str, lock: bool = False) -> Invite | None:
+        row = self.c.execute("SELECT * FROM invites WHERE id = %s" + (" FOR UPDATE" if lock else ""),
+                             (invite_id,)).fetchone()
+        return _invite(row) if row else None
+
+    def open_invite(self, sender: str, recipient: str, code: str, now: datetime, lock: bool = False) -> Invite | None:
+        if lock:
+            self._pair_lock("invite", sender, recipient)
+        row = self.c.execute("SELECT * FROM invites WHERE sender = %s AND recipient = %s AND code = %s AND "
+                             "status = 'pending' AND expires_at > %s ORDER BY created_at DESC LIMIT 1"
+                             + (" FOR UPDATE" if lock else ""), (sender, recipient, code, now)).fetchone()
+        return _invite(row) if row else None
+
+    def invites_to(self, player: str, now: datetime) -> builtins.list[Invite]:
+        rows = self.c.execute("SELECT * FROM invites WHERE recipient = %s AND status = 'pending' AND expires_at > %s "
+                              "ORDER BY updated_at DESC, id DESC", (player, now)).fetchall()
+        return [_invite(r) for r in rows]
+
+    def count_invites_since(self, sender: str, since: datetime) -> int:
+        row = self.c.execute("SELECT count(*) AS n FROM invites WHERE sender = %s AND created_at > %s",
+                             (sender, since)).fetchone()
+        return int(row["n"]) if row else 0
+
+    def add_invite(self, i: Invite) -> None:
+        self.c.execute("INSERT INTO invites (id, sender, recipient, mode, code, match, status, created_at, expires_at, "
+                       "updated_at) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                       (i.id, i.sender, i.recipient, i.mode, i.code, i.match, i.status.value, i.created_at,
+                        i.expires_at, i.updated_at))
+
+    def save_invite(self, i: Invite) -> None:
+        self.c.execute("UPDATE invites SET status = %s, expires_at = %s, updated_at = %s WHERE id = %s",
+                       (i.status.value, i.expires_at, i.updated_at, i.id))
 
 
 class PostgresStore:

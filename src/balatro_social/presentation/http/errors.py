@@ -9,7 +9,13 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from balatro_social.application.errors import AuthUnavailable, GameApiUnavailable, NotAuthenticated, RunNotFound
+from balatro_social.application.errors import (
+    AuthUnavailable,
+    GameApiUnavailable,
+    NoOpenMatch,
+    NotAuthenticated,
+    RunNotFound,
+)
 from balatro_social.domain import (
     AlreadyFriends,
     AvatarNotFound,
@@ -24,6 +30,8 @@ from balatro_social.domain import (
     InvalidMessage,
     InvalidSeed,
     InvalidTitle,
+    InviteClosed,
+    InviteNotFound,
     MessageNotFound,
     NotAGroup,
     NotFriends,
@@ -47,6 +55,7 @@ STATUS: list[tuple[type[DomainError], int]] = [
     (ConversationNotFound, 404),
     (MessageNotFound, 404),
     (RunNotFound, 404),
+    (InviteNotFound, 404),
     (AvatarNotFound, 404),
     (InvalidImage, 422),
     (SelfAction, 422),
@@ -60,6 +69,8 @@ STATUS: list[tuple[type[DomainError], int]] = [
     (NotOwner, 403),
     (AlreadyFriends, 409),
     (RequestClosed, 409),
+    (InviteClosed, 409),
+    (NoOpenMatch, 409),
     (NotAGroup, 409),
     (GroupFull, 409),
     (TooManyFriends, 409),

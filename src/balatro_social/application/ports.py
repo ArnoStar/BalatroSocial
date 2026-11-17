@@ -15,6 +15,8 @@ from balatro_social.domain import (
     Conversation,
     FriendRequest,
     Friendship,
+    Invite,
+    MatchCard,
     Member,
     Message,
     PlayerRecord,
@@ -153,6 +155,23 @@ class Unit(Protocol):
 
     def count_messages_since(self, sender: str, since: datetime) -> int: ...
 
+    # invites to a match
+    def invite(self, invite_id: str, lock: bool = False) -> Invite | None: ...
+
+    def open_invite(self, sender: str, recipient: str, code: str, now: datetime, lock: bool = False) -> Invite | None:
+        """The sender's open invite to the recipient for this match code."""
+        ...
+
+    def invites_to(self, player: str, now: datetime) -> builtins.list[Invite]:
+        """The player's open invites (pending, not expired), newest first."""
+        ...
+
+    def count_invites_since(self, sender: str, since: datetime) -> int: ...
+
+    def add_invite(self, i: Invite) -> None: ...
+
+    def save_invite(self, i: Invite) -> None: ...
+
 
 class Store(Protocol):
     def unit(self) -> AbstractContextManager[Unit]: ...
@@ -163,6 +182,14 @@ class RunSource(Protocol):
 
     def run(self, player: Player, run_id: str) -> RunCard:
         """Raises RunNotFound (not theirs) and GameApiUnavailable."""
+        ...
+
+
+class MatchSource(Protocol):
+    """The game API: the player's match waiting for players, read with their own token."""
+
+    def open_match(self, player: Player) -> MatchCard:
+        """Raises NoOpenMatch (none in its lobby) and GameApiUnavailable."""
         ...
 
 

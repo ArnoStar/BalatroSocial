@@ -38,7 +38,7 @@ def frame(event: str, data: Any) -> str:
             responses={200: {"content": {"text/event-stream": {}},
                              "description": "hello, then message, message_deleted, read, typing, conversation, "
                                             "conversation_left, friend_request, friend, friend_removed, presence, "
-                                            "me; ends with expired or reset"}})
+                                            "invite, me; ends with expired or reset"}})
 async def events(request: Request, player: CurrentPlayer, uses: Uses) -> StreamingResponse:
     """Open it with ``fetch`` and the ``Authorization`` header (an EventSource can't send one). While a stream
     is open the player is online for their friends."""

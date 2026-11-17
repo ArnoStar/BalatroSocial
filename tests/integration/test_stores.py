@@ -143,3 +143,27 @@ def test_pictures_are_kept(store_world: World) -> None:
     w.uses.remove_avatar(ann)
     with pytest.raises(Exception, match="no profile picture"):
         w.uses.avatar("ann")
+
+
+def test_invites_are_kept(store_world: World) -> None:
+    from datetime import timedelta
+
+    from balatro_social.application.dto import NewInvite
+    from balatro_social.domain import InviteStatus, MatchCard
+
+    w = store_world
+    ann, bob = w.p("Ann"), w.p("Bob")
+    w.uses.me(ann)
+    w.uses.me(bob)
+    w.uses.accept(bob, w.uses.send_request(ann, NewRequest(to="bob")).id)
+    w.runs.matches["ann"] = MatchCard(id="m1", code="ABC234", mode="pvp")
+    inv = w.uses.send_invite(ann, NewInvite(to="bob"))
+    assert w.uses.send_invite(ann, NewInvite(to="bob")).id == inv.id  # (the same one, open longer)
+    assert [i.id for i in w.uses.invites(bob)] == [inv.id] and w.uses.inbox(bob).count == 1
+    assert w.uses.answer_invite(bob, inv.id, False).status is InviteStatus.DECLINED
+    assert w.uses.invites(bob) == []
+    w.runs.matches["ann"] = MatchCard(id="m2", code="XYZ789", mode="pvp")
+    w.uses.send_invite(ann, NewInvite(to="bob"))
+    w.clock.advance(minutes=10)
+    assert w.uses.invites(bob) == [] and w.uses.inbox(bob).count == 0
+    assert T0 + timedelta(minutes=10) == w.clock.now()

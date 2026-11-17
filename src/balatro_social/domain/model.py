@@ -1,5 +1,6 @@
 """What the social service keeps: players, their friendships, requests and
-blocks, conversations (direct and group) and their messages."""
+blocks, conversations (direct and group) and their messages, and invites to
+play a match together."""
 
 from __future__ import annotations
 
@@ -185,3 +186,38 @@ class Activity:
     ante: int | None = None
     seeded: bool = False
     challenge: str | None = None
+
+
+class InviteStatus(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+
+
+@dataclass
+class Invite:
+    """A player invites a friend to their multiplayer match (its lobby on the game API): the friend joins it with
+    ``code``. It is open until answered or until ``expires_at``."""
+
+    id: str
+    sender: str
+    recipient: str
+    mode: str  # the match's mode ("pvp", "coop")
+    code: str  # the match's invite code
+    match: str  # the match's id
+    status: InviteStatus
+    created_at: datetime
+    expires_at: datetime
+    updated_at: datetime
+
+    def open(self, now: datetime) -> bool:
+        return self.status is InviteStatus.PENDING and now < self.expires_at
+
+
+@dataclass(frozen=True)
+class MatchCard:
+    """A player's match waiting for players, as the game API says (read with their own token)."""
+
+    id: str
+    code: str
+    mode: str

@@ -15,7 +15,7 @@ from balatro_social import __version__
 from balatro_social.application.use_cases import UseCases
 
 from . import errors
-from .routes import conversations, events, friends, me, meta, players
+from .routes import conversations, events, friends, invites, me, meta, players
 
 DESCRIPTION = """
 Friends and chat for Balatro in the browser: friend requests (by name, or by
@@ -55,7 +55,7 @@ def create_app(use_cases: UseCases, cors_origins: Sequence[str] = ("*",), heartb
     app.add_middleware(CORSMiddleware, allow_origins=list(cors_origins), allow_methods=["*"], allow_headers=["*"],
                        expose_headers=["Location", "WWW-Authenticate"])
     errors.install(app)
-    for module in (meta, me, players, friends, conversations, events):
+    for module in (meta, me, players, friends, invites, conversations, events):
         app.include_router(module.router)
 
     @app.get("/", include_in_schema=False)
