@@ -209,7 +209,8 @@ def relation(u: Unit, me: str, other: str) -> tuple[Relation, FriendRequest | No
 def activity_view(a: Activity | None) -> ActivityView | None:
     if a is None:
         return None
-    return ActivityView(kind=a.kind, deck=a.deck, stake=a.stake, ante=a.ante, seeded=a.seeded, challenge=a.challenge)
+    return ActivityView(kind=a.kind, deck=a.deck, stake=a.stake, ante=a.ante, seeded=a.seeded, challenge=a.challenge,
+                        mode=a.mode)
 
 
 def presence_view(deps: Deps, rec: PlayerRecord, now: datetime) -> PresenceView:
@@ -448,7 +449,7 @@ class ReportPresence(_UseCase):
     def __call__(self, player: Player, activity: ActivityInput | None) -> None:
         act = check_activity(Activity(kind=activity.kind, deck=activity.deck, stake=activity.stake,
                                       ante=activity.ante, seeded=activity.seeded,
-                                      challenge=activity.challenge)) if activity else None
+                                      challenge=activity.challenge, mode=activity.mode)) if activity else None
         now, out = self.deps.clock.now(), Outbox()
         with self.deps.store.unit() as u:
             rec = ensure_player(self.deps, u, player, now)

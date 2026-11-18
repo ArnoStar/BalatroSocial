@@ -38,7 +38,7 @@ needs an access token from the identity service.
 | `DELETE /v1/me/avatar` | no picture (your initials) |
 | `GET /v1/avatars?ids=a,b,c` | which players have a picture: `{id: version or null}` (public; 100 ids at most), so that a page naming many players shows theirs with one look-up |
 | `GET /v1/avatars/{id}?v=` | a player's picture, public (an `<img>` sends no token); `v`, the views' `avatar` version, makes it cacheable for good |
-| `PUT /v1/me/presence` | the game's heartbeat: `{activity: {kind: menu\|run\|watching, deck, stake, ante, seeded, challenge}}`, every minute and on each change |
+| `PUT /v1/me/presence` | the game's heartbeat: `{activity: {kind: menu\|run\|watching, deck, stake, ante, seeded, challenge, mode: pvp\|coop}}`, every minute and on each change |
 | `GET /v1/players?q=` | players by the start of their name (2 characters at least), with their `relation` to you |
 | `GET /v1/players/{id}`, `GET /v1/codes/{code}` | a player (by id, or friend code: an invite link) |
 | `GET /v1/friends` | your friends, online first, with their `presence` and your direct `conversation` |

@@ -70,6 +70,10 @@ def test_seeds() -> None:
 
 def test_activities() -> None:
     assert check_activity(Activity(kind=ActivityKind.MENU, deck="b_red", ante=3)) == Activity(kind=ActivityKind.MENU)
+    pvp = Activity(kind=ActivityKind.RUN, deck="b_red", stake=1, mode="pvp")
+    assert check_activity(pvp) == pvp
+    with pytest.raises(InvalidActivity):
+        check_activity(Activity(kind=ActivityKind.RUN, deck="b_red", stake=1, mode="duel"))
     run = Activity(kind=ActivityKind.RUN, deck="b_plasma", stake=5, ante=6, challenge="c_omelette_1")
     assert check_activity(run) == run
     for wrong in (Activity(kind=ActivityKind.RUN), Activity(kind=ActivityKind.RUN, deck="b_red"),

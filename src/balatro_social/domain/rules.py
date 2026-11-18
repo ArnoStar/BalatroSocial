@@ -96,8 +96,11 @@ def check_seed(seed: str, deck: str, stake: int) -> SeedCard:
     return SeedCard(seed=s, deck=deck, stake=stake)
 
 
+MATCH_MODES = (None, "pvp", "coop")
+
+
 def check_activity(a: Activity) -> Activity:
-    """What the game may say the player does: in a run, its deck, stake and ante."""
+    """What the game may say the player does: in a run, its deck, stake and ante (and a multiplayer run's mode)."""
     if a.kind is not ActivityKind.RUN:
         return Activity(kind=a.kind)
     if a.deck is None or not DECK.fullmatch(a.deck):
@@ -108,4 +111,6 @@ def check_activity(a: Activity) -> Activity:
         raise InvalidActivity("an ante is 0 to 10000")
     if a.challenge is not None and not CHALLENGE.fullmatch(a.challenge):
         raise InvalidActivity(f"no challenge {a.challenge!r}")
+    if a.mode not in MATCH_MODES:
+        raise InvalidActivity("a multiplayer run's mode is pvp or coop")
     return a
