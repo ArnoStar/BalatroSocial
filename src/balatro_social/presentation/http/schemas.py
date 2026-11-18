@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from balatro_social.application.dto import (
@@ -39,10 +41,11 @@ class ActivityBody(Body):
     ante: int | None = Field(None, ge=0, le=10_000)
     seeded: bool = False
     challenge: str | None = Field(None, max_length=60)
+    mode: Literal["pvp", "coop"] | None = Field(None, description="a multiplayer run's mode")
 
     def to_dto(self) -> ActivityInput:
         return ActivityInput(kind=self.kind, deck=self.deck, stake=self.stake, ante=self.ante, seeded=self.seeded,
-                             challenge=self.challenge)
+                             challenge=self.challenge, mode=self.mode)
 
 
 class PresenceBody(Body):

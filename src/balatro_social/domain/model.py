@@ -186,6 +186,7 @@ class Activity:
     ante: int | None = None
     seeded: bool = False
     challenge: str | None = None
+    mode: str | None = None  # a multiplayer run: "pvp" or "coop"
 
 
 class InviteStatus(StrEnum):

@@ -25,7 +25,7 @@ def test_friends_see_what_a_player_plays(world: World) -> None:
     world.hub.clear()
     world.call("PUT", "/v1/me/presence", "Ann", {"activity": RUN}, status=204)
     p = presence_of(world, "Bob", "ann")
-    assert p["online"] and p["activity"] == {**RUN, "seeded": False, "challenge": None}
+    assert p["online"] and p["activity"] == {**RUN, "seeded": False, "challenge": None, "mode": None}
     assert [e.data.presence.online for e in world.hub.to("bob", "presence")] == [True]
     assert not world.hub.to("cy", "presence")
     assert world.call("GET", "/v1/players/ann", "Cy")["presence"] is None  # (not a friend)
@@ -34,6 +34,11 @@ def test_friends_see_what_a_player_plays(world: World) -> None:
     assert len(world.hub.to("bob", "presence")) == 1
     r = world.call("PUT", "/v1/me/presence", "Ann", {"activity": {"kind": "run", "deck": "b_red"}}, status=422)
     assert r["code"] in ("invalid_activity", "invalid_request")
+    # a multiplayer run says which one
+    world.call("PUT", "/v1/me/presence", "Ann", {"activity": {**RUN, "mode": "coop"}}, status=204)
+    assert presence_of(world, "Bob", "ann")["activity"]["mode"] == "coop"
+    world.call("PUT", "/v1/me/presence", "Ann", {"activity": {**RUN, "mode": "solo"}}, status=422)
+    world.call("PUT", "/v1/me/presence", "Ann", {"activity": RUN}, status=204)
 
     # hidden: friends see Ann offline at once
     world.call("PATCH", "/v1/me", "Ann", {"show_presence": False})
